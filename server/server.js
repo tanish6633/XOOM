@@ -115,12 +115,12 @@ app.get('/health', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const startScheduler = require('./scheduler');
-const { verifyConnection } = require('./utils/mailer'); // Import Verify
+//const startScheduler = require('./scheduler');
+const { verifyConnection } = require('utils/mailer.js'); // Import Verify
 
 // Conditional Listen for Local Development
 if (require.main === module) {
-    startScheduler();
+   startScheduler();
     verifyConnection(); // Verify SMTP on Start
 
     server.listen(PORT, () => {
