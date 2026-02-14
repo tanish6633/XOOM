@@ -21,20 +21,20 @@ app.use(passport.initialize());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // --- REGISTER ALL API ROUTES ---
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/inventory', require('./routes/inventory'));
-app.use('/api/tasks', require('./routes/tasks'));
-app.use('/api/expenses', require('./routes/expenses'));
-app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/calendar', require('./routes/calendar'));
-app.use('/api/forum', require('./routes/forum'));
-app.use('/api/trading', require('./routes/trading'));
-app.use('/api/chat', require('./routes/chat'));
-app.use('/api/market', require('./routes/market'));
-app.use('/api/doctor', require('./routes/doctor'));
-app.use('/api/reports', require('./routes/reports'));
-app.use('/api/trade', require('./routes/trade'));
-app.use('/api/ai', require('./routes/ai')); // NEW AI VOICE ROUTE
+app.use('/api/auth', require('../routes/auth'));
+app.use('/api/inventory', require('../routes/inventory'));
+app.use('/api/tasks', require('../routes/tasks'));
+app.use('/api/expenses', require('../routes/expenses'));
+app.use('/api/dashboard', require('../routes/dashboard'));
+app.use('/api/calendar', require('../routes/calendar'));
+app.use('/api/forum', require('../routes/forum'));
+app.use('/api/trading', require('../routes/trading'));
+app.use('/api/chat', require('../routes/chat'));
+app.use('/api/market', require('../routes/market'));
+app.use('/api/doctor', require('../routes/doctor'));
+app.use('/api/reports', require('../routes/reports'));
+app.use('/api/trade', require('../routes/trade'));
+app.use('/api/ai', require('../routes/ai')); // NEW AI VOICE ROUTE
 
 // --- SOCKET.IO SIGNALLING (For Calls) ---
 // --- SOCKET.IO SIGNALLING (Real-Time Presence & Calls) ---
