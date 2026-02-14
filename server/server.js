@@ -120,7 +120,7 @@ const PORT = process.env.PORT || 3000;
 
 // Conditional Listen for Local Development
 if (require.main === module) {
-   startScheduler();
+   // startScheduler();
    // verifyConnection(); // Verify SMTP on Start
 
     server.listen(PORT, () => {
