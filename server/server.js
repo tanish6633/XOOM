@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Passport for Google Auth
-const passport = require('./config/passport');
+const passport = require('../config/passport');
 app.use(passport.initialize());
 
 app.use(express.static(path.join(__dirname, '../public')));
