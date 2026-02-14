@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Farm Central | Smart Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="css/mobile-animations.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: #f8fafc;
+            font-family: 'Outfit', 'Inter', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Global Interactive Hover Effects */
+        button:hover,
+        input:hover,
+        .glass:hover,
+        a:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="pb-20">
+    <div id="canvas-bg"></div>
+
+    <div class="min-h-screen p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+            <div class="text-center md:text-left">
+                <h1
+                    class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 tracking-tighter">
+                    FARM CENTRAL
+                </h1>
+                <p class="text-slate-400 font-medium text-lg mt-1">Welcome, <span id="farmer-name"
+                        class="text-white font-bold">Farmer</span></p>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="window.location.href='index.html'"
+                    class="glass px-6 py-2 rounded-full hover:bg-white/10 transition font-bold text-slate-300 text-sm">
+                    🏠 Home
+                </button>
+                <button onclick="window.location.href='profile.html'"
+                    class="glass px-6 py-2 rounded-full hover:bg-white/10 transition font-bold text-emerald-400 text-sm border border-emerald-500/30">
+                    👤 Profile
+                </button>
+                <button onclick="logout()"
+                    class="glass px-6 py-2 rounded-full border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition flex items-center gap-2 text-sm">
+                    <span>🛑</span> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- WEATHER & ALERTS -->
+        <div
+            class="glass p-6 md:p-8 rounded-3xl mb-12 flex flex-col md:flex-row items-center justify-between border-b-4 border-blue-400 gap-6">
+            <div class="flex items-center gap-6">
+                <div id="weather-icon" class="text-6xl animate-pulse">🌤️</div>
+                <div>
+                    <h2 class="text-xl md:text-2xl font-bold text-white">Field Conditions</h2>
+                    <p id="weather-desc" class="text-gray-400 text-sm uppercase tracking-widest mt-1 font-mono">
+                        Loading...</p>
+                </div>
+            </div>
+            <div class="text-center md:text-right">
+                <p id="weather-temp" class="text-5xl font-black text-white">--°C</p>
+                <div class="flex gap-4 text-xs font-mono text-gray-400 mt-2 justify-center md:justify-end">
+                    <span id="weather-wind">Wind: --</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS (Moved to Top) -->
+        <div class="mb-12">
+            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2" data-i18n="quick_actions_header">
+                <span>🚀</span> Quick Actions
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Inventory -->
+                <button onclick="location.href='inventory.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-blue-500/20">
+                    <div
+                        class="bg-blue-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        📦</div>
+                    <div>
+                        <h3 class="font-bold text-base text-blue-200" data-i18n="inventory">Inventory</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="manage_stocks">Manage
+                            Stocks</p>
+                    </div>
+                </button>
+                <!-- Tasks -->
+                <button onclick="location.href='tasks.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-yellow-500/20">
+                    <div
+                        class="bg-yellow-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        📝</div>
+                    <div>
+                        <h3 class="font-bold text-base text-yellow-200" data-i18n="tasks">Tasks</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="jobs_title">To-Do List
+                        </p>
+                    </div>
+                </button>
+                <!-- Crop Doctor -->
+                <button onclick="location.href='doctor.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-emerald-500/30">
+                    <div
+                        class="bg-emerald-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        🔬</div>
+                    <div>
+                        <h3 class="font-bold text-base text-emerald-400" data-i18n="ai_doctor">AI Doctor</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="disease_scan">Disease
+                            Scan</p>
+                    </div>
+                </button>
+                <!-- Market -->
+                <button onclick="location.href='market.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-purple-500/20">
+                    <div
+                        class="bg-purple-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        📈</div>
+                    <div>
+                        <h3 class="font-bold text-base text-purple-200" data-i18n="market">Market</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="live_prices">Live
+                            Prices</p>
+                    </div>
+                </button>
+                <!-- Calculator -->
+                <button onclick="location.href='calculator.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-cyan-500/30">
+                    <div
+                        class="bg-cyan-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        🧮</div>
+                    <div>
+                        <h3 class="font-bold text-base text-cyan-400" data-i18n="calculator">ROI Calc</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="profit_estimator">
+                            Profit Estimator</p>
+                    </div>
+                </button>
+                <!-- Community -->
+                <button onclick="location.href='community.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-indigo-500/20">
+                    <div
+                        class="bg-indigo-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        👥</div>
+                    <div>
+                        <h3 class="font-bold text-base text-indigo-200" data-i18n="community">Community</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="public_forum">Public
+                            Forum</p>
+                    </div>
+                </button>
+                <!-- Chats -->
+                <button onclick="location.href='chat.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-pink-500/20">
+                    <div
+                        class="bg-pink-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        💬</div>
+                    <div>
+                        <h3 class="font-bold text-base text-pink-200" data-i18n="my_chats">My Chats</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="direct_messages">
+                            Direct Messages</p>
+                    </div>
+                </button>
+                <!-- Expenses -->
+                <button onclick="location.href='expenses.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-rose-500/20">
+                    <div
+                        class="bg-rose-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        💰</div>
+                    <div>
+                        <h3 class="font-bold text-base text-rose-400" data-i18n="expenses">Expenses</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="manager">Manager</p>
+                    </div>
+                </button>
+                <!-- Trade Hub -->
+                <button onclick="location.href='trading.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)] col-span-1 md:col-span-2 lg:col-span-2">
+                    <div
+                        class="bg-orange-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        🤝</div>
+                    <div>
+                        <h3 class="font-bold text-base text-orange-400" data-i18n="trade_hub">Trade Hub</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="buy_sell">Buy & Sell
+                            Crops</p>
+                    </div>
+                </button>
+                <!-- Profile -->
+                <button onclick="location.href='profile.html'"
+                    class="glass p-4 rounded-2xl hover:bg-white/10 transition group text-left flex items-center gap-4 border border-teal-500/20 col-span-1 md:col-span-2 lg:col-span-2">
+                    <div
+                        class="bg-teal-500/20 w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                        ⚙️</div>
+                    <div>
+                        <h3 class="font-bold text-base text-teal-200" data-i18n="settings">Settings</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest" data-i18n="profile_pref">Profile
+                            & Preferences</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- DESKTOP GRID (Hidden on Mobile) -->
+        <div class="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <!-- Flash cards go here (Expenses, Tasks etc, but Total Assets removed) -->
+            <!-- Expenses -->
+            <div class="glass p-6 rounded-2xl hover-lift border-l-4 border-rose-500">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-bold uppercase tracking-wider" data-i18n="outflow_title">
+                            Total Outflow</p>
+                        <h3 class="text-3xl font-black mt-1">₹<span id="total-expenses-desk">0</span></h3>
+                    </div>
+                    <div class="p-3 bg-rose-500/20 rounded-xl text-rose-400">💸</div>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-rose-500 h-full w-[45%]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOBILE "SUPER INTELLIGENCE" FEED (Visible Only on Mobile) -->
+        <div id="mobile-view" class="md:hidden flex flex-col gap-6 pb-24">
+
+            <!-- 1. AI Status & Weather Header -->
+            <div
+                class="glass p-5 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-20">
+                    <div class="w-24 h-24 bg-green-500 blur-[50px] rounded-full"></div>
+                </div>
+                <div class="relative z-10 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">System Online</h2>
+                        <p class="text-green-400 text-xs font-mono tracking-widest uppercase">● Connected to Hub</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-3xl">🌤️</span>
+                        <p class="text-slate-300 text-sm font-bold">28°C</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Quick Actions (Horizontal Scroll) -->
+            <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+                <button onclick="location.href='market.html'"
+                    class="flex-shrink-0 w-20 h-20 glass rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+                    <span class="text-2xl">📉</span>
+                    <span class="text-[10px] font-bold text-slate-300">Market</span>
+                </button>
+                <button onclick="location.href='chat.html'"
+                    class="flex-shrink-0 w-20 h-20 glass rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+                    <span class="text-2xl">💬</span>
+                    <span class="text-[10px] font-bold text-slate-300">AI Chat</span>
+                </button>
+                <button onclick="location.href='inventory.html'"
+                    class="flex-shrink-0 w-20 h-20 glass rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+                    <span class="text-2xl">📦</span>
+                    <span class="text-[10px] font-bold text-slate-300">Stock</span>
+                </button>
+                <button onclick="location.href='reports.html'"
+                    class="flex-shrink-0 w-20 h-20 glass rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+                    <span class="text-2xl">📊</span>
+                    <span class="text-[10px] font-bold text-slate-300">Reports</span>
+                </button>
+            </div>
+
+            <!-- 3. Smart Feed Cards -->
+            <div class="space-y-4">
+                <div class="glass p-5 rounded-2xl border-l-4 border-yellow-400">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-bold text-yellow-400 uppercase">⚠️ Warning</span>
+                        <span class="text-[10px] text-slate-500">2m ago</span>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Low Water Level</h3>
+                    <p class="text-slate-400 text-sm">Pump 3 requires attention. Auto-schedule repair?</p>
+                </div>
+
+                <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-bold text-blue-400 uppercase">📈 Market Trend</span>
+                        <span class="text-[10px] text-slate-500">1h ago</span>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">Wheat Prices Up 5%</h3>
+                    <div class="h-16 w-full mt-2 bg-slate-800/50 rounded-lg flex items-end px-2 gap-1 pb-1">
+                        <!-- Tiny Chart Bars -->
+                        <div class="w-full bg-blue-500/30 h-[40%] rounded-t"></div>
+                        <div class="w-full bg-blue-500/50 h-[60%] rounded-t"></div>
+                        <div class="w-full bg-blue-500/80 h-[50%] rounded-t"></div>
+                        <div class="w-full bg-blue-500 h-[80%] rounded-t"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="glass p-6 rounded-3xl border-l-4 border-emerald-500 hover-lift relative overflow-hidden group">
+            <div class="absolute right-[-10px] top-[-10px] p-4 opacity-10 group-hover:opacity-20 transition text-8xl">
+                📦</div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Inventory Value</h3>
+            <p id="stat-assets" class="text-3xl md:text-3xl font-black text-white tracking-tight">₹0</p>
+            <p class="text-[10px] text-emerald-400 mt-2 font-bold uppercase tracking-wider">Asset Valuation</p>
+        </div>
+
+        <!-- Outflow Card Removed -->
+
+        <!-- Tasks -->
+        <div class="glass p-6 rounded-3xl border-l-4 border-blue-500 hover-lift relative overflow-hidden group">
+            <div class="absolute right-[-10px] top-[-10px] p-4 opacity-10 group-hover:opacity-20 transition text-8xl">
+                📝</div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pending Jobs</h3>
+            <p id="stat-tasks" class="text-3xl md:text-3xl font-black text-white tracking-tight">0</p>
+            <p class="text-[10px] text-blue-400 mt-2 font-bold uppercase tracking-wider">Action Items</p>
+        </div>
+
+        <!-- Messages (NEW) -->
+        <div class="glass p-6 rounded-3xl border-l-4 border-pink-500 hover-lift relative overflow-hidden group cursor-pointer"
+            onclick="location.href='chat.html'">
+            <div class="absolute right-[-10px] top-[-10px] p-4 opacity-10 group-hover:opacity-20 transition text-8xl">
+                💬</div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Inbox</h3>
+            <p id="stat-msgs" class="text-3xl md:text-3xl font-black text-white tracking-tight">0</p>
+            <p class="text-[10px] text-pink-400 mt-2 font-bold uppercase tracking-wider">Messages Received</p>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+
+        <!-- LEFT: Analytics -->
+        <div class="glass p-6 rounded-3xl border border-white/5 lg:col-span-1 h-full flex flex-col">
+            <h3 class="text-lg font-bold mb-6 flex items-center text-white">
+                <span class="bg-yellow-500/20 text-yellow-500 p-2 rounded-lg mr-3 text-sm">📊</span>
+                Expenses
+            </h3>
+            <div class="relative flex-grow min-h-[250px] w-full">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- RIGHT: Inventory Analytics -->
+        <div class="glass p-6 rounded-3xl border border-white/5 lg:col-span-1 h-full flex flex-col">
+            <h3 class="text-lg font-bold mb-6 flex items-center text-white">
+                <span class="bg-emerald-500/20 text-emerald-500 p-2 rounded-lg mr-3 text-sm">📦</span>
+                Inventory
+            </h3>
+            <div class="relative flex-grow min-h-[250px] w-full">
+                <canvas id="inventoryChart"></canvas>
+            </div>
+        </div>
+
+
+    </div>
+
+
+
+    <!-- REPORTS BANNER -->
+    <div
+        class="glass p-8 rounded-3xl mb-12 flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900/50 gap-6 text-center md:text-left border border-white/5">
+        <div>
+            <h3 class="text-xl font-bold text-white mb-2">📄 Professional Reports</h3>
+            <p class="text-slate-400 text-sm max-w-md">Generate official financial statements and yield documents
+                instantly.</p>
+        </div>
+        <button onclick="downloadReport()"
+            class="w-full md:w-auto bg-white text-slate-900 px-8 py-3 rounded-xl font-black hover:bg-gray-200 transition flex items-center justify-center gap-2 text-sm shadow-xl">
+            <span>⬇️</span> <span data-i18n="download_pdf">Download PDF</span>
+        </button>
+    </div>
+
+    <!-- VOICE FAB -->
+    <div class="fixed bottom-8 right-8 z-50">
+        <button onclick="farmAI.activateAI()" id="voice-fab"
+            class="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 text-white flex items-center justify-center shadow-2xl hover:scale-110 transition border-4 border-white/20 animate-bounce">
+            🎙️
+        </button>
+    </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // --- 1. AUTH GATEKEEPER ---
+        // Check for Google Auth Token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+            localStorage.setItem('username', urlParams.get('username'));
+            localStorage.setItem('email', urlParams.get('email'));
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html'; // FORCE LOGIN PAGE
+        }
+        document.getElementById('farmer-name').innerText = localStorage.getItem('username') || 'Farmer';
+
+        // --- 2. CLEAN BACKGROUND (No 3D) ---
+        // 3D removed for performance and professional look per user request
+
+
+        // --- 3. FETCH STATS ---
+        async function showStats() {
+            try {
+                const res = await fetch('/api/dashboard/summary', {
+                    headers: { 'Authorization': token }
+                });
+                const stats = await res.json();
+
+                document.getElementById('stat-assets').innerText = `₹${Number(stats.inventoryValue).toLocaleString()}`;
+                // document.getElementById('stat-expenses').innerText = `₹${Number(stats.totalExpenses).toLocaleString()}`; // Removed element
+                document.getElementById('stat-tasks').innerText = stats.taskCount;
+                document.getElementById('stat-msgs').innerText = stats.msgCount || 0;
+
+                renderChart(stats.expenseBreakdown);
+                renderInvChart(stats.inventoryBreakdown);
+            } catch (err) { console.error("Sync Error", err); }
+        }
+        showStats();
+
+        // --- 4. WEATHER ---
+        async function fetchWeather() {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.59&longitude=78.96&current_weather=true`);
+                const data = await res.json();
+                document.getElementById('weather-temp').innerText = `${data.current_weather.temperature}°C`;
+                document.getElementById('weather-wind').innerText = `Wind: ${data.current_weather.windspeed} km/h`;
+
+                const code = data.current_weather.weathercode;
+                const weatherMap = { 0: '☀️ Clear Sky', 1: '🌤️ Mainly Clear', 2: '⛅ Partly Cloudy', 3: '☁️ Overcast', 45: '🌫️ Fog', 51: 'DRIZZLE', 61: 'RAIN', 71: 'SNOW', 95: 'THUNDERSTORM' };
+                document.getElementById('weather-desc').innerText = weatherMap[code] || "Clear Sky";
+
+                // Helper: Simple Season Logic
+                updateAdvisor(data.current_weather.temperature);
+            } catch (e) { }
+        }
+
+        function updateAdvisor(temp) {
+            document.getElementById('advisor-loc').innerText = "India (Simulated)";
+            const month = new Date().getMonth(); // 0-11
+            const cropEl = document.getElementById('advisor-crop');
+
+            // Advanced Crop Logic (Season + Temp + Rainfall Estimate)
+            let crop = "Wheat";
+            let variety = "";
+
+            if (month >= 5 && month <= 9) { // Kharif (Monsoon)
+                if (temp > 25) { crop = "Rice (Basmati)"; variety = "PB 1121"; }
+                else if (temp > 30) { crop = "Cotton"; variety = "Bt Cotton"; }
+                else { crop = "Maize"; variety = "Hybrid 505"; }
+            } else if (month >= 10 || month <= 2) { // Rabi (Winter)
+                if (temp < 15) { crop = "Mustard"; variety = "Pusa Bold"; }
+                else if (temp < 25) { crop = "Wheat"; variety = "Sharbati"; }
+                else { crop = "Chickpea (Chana)"; variety = "Desi"; }
+            } else { // Zaid (Summer)
+                if (temp > 35) { crop = "Watermelon"; variety = "Sugar Baby"; }
+                else { crop = "Cucumber"; variety = "Green Long"; }
+            }
+
+            cropEl.innerHTML = `${crop} <span class="text-sm block text-slate-400 mt-1 font-normal">Variety: ${variety}</span>`;
+            cropEl.classList.remove('animate-pulse');
+        }
+
+        fetchWeather();
+
+        // --- 5. CHARTS ---
+        let chartInstance = null;
+        let invChartInstance = null;
+
+        function renderChart(data) {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            const labels = data.map(d => d.category || 'Uncategorized');
+            const values = data.map(d => d.total);
+            const colors = ['#10B981', '#3B82F6', '#F59E0B', '#ef4444', '#8B5CF6'];
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: 'transparent',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } } }
+                }
+            });
+        }
+
+        function renderInvChart(data) {
+            const ctx = document.getElementById('inventoryChart').getContext('2d');
+            if (invChartInstance) invChartInstance.destroy();
+
+            const labels = data && data.length ? data.map(d => d.type || 'General') : ['Empty'];
+            const values = data && data.length ? data.map(d => d.value) : [1];
+            const colors = ['#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#84cc16'];
+
+            invChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: 'transparent',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } } }
+                }
+            });
+        }
+
+        function logout() { localStorage.clear(); location.href = 'index.html'; }
+
+        async function downloadReport() {
+            try {
+                const res = await fetch('/api/reports/expenses', { headers: { 'Authorization': token } });
+                if (!res.ok) throw new Error("Failed");
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = "Report.pdf";
+                document.body.appendChild(a); a.click(); a.remove();
+            } catch (e) { alert("Error downloading report"); }
+        }
+    </script>
+    <script src="js/ai-core.js"></script>
+    <script src="js/background-3d.js"></script>
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+    <script src="js/language-manager.js"></script>
+</body>
+
+</html>

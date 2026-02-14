@@ -1,0 +1,102 @@
+/* Mobile-First Adjustments for Farm Central */
+
+/* 1. Global Touch Targets & Typography */
+body {
+    -webkit-tap-highlight-color: transparent; /* Remove tap flash */
+    padding-bottom: 80px !important; /* Space for Bottom Nav */
+}
+
+/* Increase base font size for better readability on small screens */
+html {
+    font-size: 16px; 
+}
+
+/* 2. Bottom Navigation Bar (Hidden on Desktop, Visible on Mobile) */
+#mobile-bottom-nav {
+    display: none; /* Default hidden */
+}
+
+@media (max-width: 1024px) {
+    /* Hide top header buttons on mobile/tablet if they duplicate bottom nav */
+    header .flex.gap-4 {
+        display: none;
+    }
+    
+    /* Reveal Bottom Nav */
+    #mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 70px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 9999;
+        justify-content: space-around;
+        align-items: center;
+        padding-bottom: env(safe-area-inset-bottom); /* iPhone X+ safe area */
+    }
+
+    .nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 600;
+        gap: 4px;
+        height: 100%;
+        transition: all 0.2s ease;
+    }
+
+    .nav-item.active {
+        color: #4ade80; /* Green active state */
+    }
+
+    .nav-item svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* 3. Grid & Layout Adjustments */
+    .grid-cols-1 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Make cards full width on mobile */
+    .glass {
+        border-radius: 16px; /* Slightly tighter radius for mobile */
+        padding: 20px !important;
+    }
+
+    /* Adjust Header Text */
+    h1 {
+        font-size: 2rem !important; /* 32px */
+    }
+
+    /* Adjust AI Visualizer */
+    #voice-fab {
+        bottom: 90px !important; /* Move above nav bar */
+        width: 56px !important;
+        height: 56px !important;
+    }
+}
+
+/* 4. Utility Classes for Mobile */
+.mobile-hidden {
+    display: none !important;
+}
+
+@media (min-width: 1024px) {
+    #mobile-bottom-nav {
+        display: none;
+    }
+    .desktop-hidden {
+        display: none !important;
+    }
+}

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker | 3D Farm Finance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #020617;
+            color: white;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input,
+        select {
+            background: rgba(0, 0, 0, 0.4) !important;
+            color: white !important;
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-12">
+    <div id="canvas-bg"></div>
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-4xl font-black text-yellow-500 tracking-tighter">FINANCIAL TRACKER</h1>
+                <p class="text-gray-400">Monitor your farm's cash outflow</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportCSV()"
+                    class="glass px-6 py-2 rounded-full border border-blue-500/30 font-bold hover:bg-blue-500/10 transition text-blue-400">Export
+                    CSV</button>
+                <button onclick="location.href='dashboard.html'"
+                    class="glass px-6 py-2 rounded-full border border-yellow-500/30 hover:bg-yellow-500/10 transition font-bold">Dashboard</button>
+            </div>
+        </header>
+
+        <form id="expForm"
+            class="glass p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 shadow-2xl border-t-4 border-yellow-500">
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-yellow-500 mb-2 uppercase tracking-widest">Category</label>
+                <select id="category"
+                    class="p-3 rounded-xl border border-white/10 outline-none focus:ring-2 focus:ring-yellow-500">
+                    <option value="Seeds">Seeds</option>
+                    <option value="Fertilizer">Fertilizer</option>
+                    <option value="Labor">Labor</option>
+                    <option value="Equipment">Equipment</option>
+                    <option value="Fuel">Fuel</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-yellow-500 mb-2 uppercase tracking-widest">Amount (₹)</label>
+                <input type="number" id="amount" placeholder="0.00" required
+                    class="p-3 rounded-xl border border-white/10 outline-none focus:ring-2 focus:ring-yellow-500">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-yellow-500 mb-2 uppercase tracking-widest">Date</label>
+                <input type="date" id="date" required
+                    class="p-3 rounded-xl border border-white/10 outline-none focus:ring-2 focus:ring-yellow-500">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-bold text-yellow-500 mb-2 uppercase tracking-widest">Description</label>
+                <div class="flex gap-2">
+                    <input type="text" id="desc" placeholder="Details..."
+                        class="w-full p-3 rounded-xl border border-white/10 outline-none focus:ring-2 focus:ring-yellow-500">
+                    <button type="submit"
+                        class="bg-yellow-600 hover:bg-yellow-500 px-6 rounded-xl font-bold transition-all shadow-lg shadow-yellow-900/40">Add</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="glass rounded-3xl overflow-hidden shadow-2xl">
+            <table class="w-full text-left">
+                <thead class="bg-white/5 text-yellow-500 uppercase text-xs font-bold tracking-widest">
+                    <tr>
+                        <th class="p-6">Date</th>
+                        <th class="p-6">Category</th>
+                        <th class="p-6">Notes</th>
+                        <th class="p-6 text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="expenseBody" class="divide-y divide-white/5 font-medium">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- THREE.JS 3D BACKGROUND ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-bg').appendChild(renderer.domElement);
+
+        const pyramid = new THREE.Mesh(
+            new THREE.ConeGeometry(8, 12, 4),
+            new THREE.MeshNormalMaterial({ wireframe: true })
+        );
+        scene.add(pyramid);
+        camera.position.z = 35;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            pyramid.rotation.y += 0.005;
+            pyramid.rotation.x += 0.002;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- BACKEND INTEGRATION ---
+        const token = localStorage.getItem('token');
+        const expForm = document.getElementById('expForm');
+        const expenseBody = document.getElementById('expenseBody');
+
+        // Security Check
+        if (!token) window.location.href = 'dashboard.html';
+
+        // Load Expenses from Database
+        async function loadExpenses() {
+            try {
+                const res = await fetch('/api/expenses', {
+                    headers: { 'Authorization': token }
+                });
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    expenseBody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-gray-500">No expenses recorded yet.</td></tr>`;
+                    return;
+                }
+
+                expenseBody.innerHTML = data.map(e => `
+                    <tr class="hover:bg-white/5 transition border-white/5 group">
+                        <td class="p-6 text-gray-400 font-mono text-sm">${e.expense_date.split('T')[0]}</td>
+                        <td class="p-6"><span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-xs font-black uppercase">${e.category}</span></td>
+                        <td class="p-6 italic text-gray-300">${e.description || '—'}</td>
+                        <td class="p-6 text-right font-black text-xl text-yellow-100 flex items-center justify-end gap-4">
+                            ₹${parseFloat(e.amount).toLocaleString()}
+                            <button onclick="deleteExpense(${e.id})" class="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-500/20 p-2 rounded-lg transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Load Error:", err);
+            }
+        }
+
+        async function deleteExpense(id) {
+            if (!confirm("Remove this expense record?")) return;
+            const res = await fetch(`/api/expenses/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+            });
+            if (res.ok) loadExpenses();
+        }
+
+        // Add New Expense
+        expForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                category: document.getElementById('category').value,
+                amount: document.getElementById('amount').value,
+                expense_date: document.getElementById('date').value,
+                description: document.getElementById('desc').value
+            };
+
+            const res = await fetch('/api/expenses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                expForm.reset();
+                loadExpenses(); // Refresh list immediately
+            } else {
+                alert("Failed to save. Check server connection.");
+            }
+        };
+
+        // Initialize
+        loadExpenses();
+
+        async function exportCSV() {
+            try {
+                const res = await fetch('/api/expenses', { headers: { 'Authorization': token } });
+                const data = await res.json();
+
+                if (!data.length) return alert("No data to export");
+
+                const csvContent = "data:text/csv;charset=utf-8,"
+                    + "ID,Date,Category,Description,Amount\n"
+                    + data.map(e => `${e.id},${e.expense_date.split('T')[0]},${e.category},${e.description},${e.amount}`).join("\n");
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "expense_report.csv");
+                document.body.appendChild(link);
+                link.click();
+            } catch (e) { console.error(e); }
+        }
+
+        // Responsive 3D
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+<script src="js/background-3d.js"></script><script src="js/global-ticker.js"></script><script src="js/mobile-nav.js"></script></body>
+
+</html>

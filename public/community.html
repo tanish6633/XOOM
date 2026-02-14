@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Farmers Community | Farm Central</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #020617;
+            color: white;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <div id="canvas-bg"></div>
+
+    <div class="max-w-4xl mx-auto h-screen flex flex-col">
+        <header class="flex justify-between items-center mb-8 shrink-0">
+            <div>
+                <h1 class="text-3xl font-black text-blue-400">COMMUNITY</h1>
+                <p class="text-gray-400">Connect with fellow farmers</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="location.href='chat.html'"
+                    class="glass px-6 py-2 rounded-full hover:bg-green-500/20 transition font-bold text-green-400">💬
+                    Messages</button>
+                <button onclick="location.href='dashboard.html'"
+                    class="glass px-6 py-2 rounded-full hover:bg-blue-500/20 transition font-bold">Back to Hub</button>
+            </div>
+        </header>
+
+        <!-- Post Box -->
+        <div class="glass p-6 rounded-2xl mb-8 shrink-0">
+            <form id="postForm" class="flex flex-col gap-4">
+                <textarea id="postContent" placeholder="Ask a question or share a tip..."
+                    class="w-full bg-black/40 p-4 rounded-xl border border-white/20 outline-none focus:border-blue-500 h-24 resize-none transition text-white placeholder-gray-500"></textarea>
+
+                <!-- Media Preview -->
+                <div id="mediaPreview"
+                    class="hidden relative w-32 h-32 rounded-lg overflow-hidden border border-white/20">
+                    <img id="previewImg" class="w-full h-full object-cover">
+                    <button type="button" onclick="clearMedia()"
+                        class="absolute top-1 right-1 bg-black/50 rounded-full p-1 hover:bg-red-500 transition">✕</button>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <label class="cursor-pointer text-blue-400 hover:text-blue-300 flex items-center gap-2 transition">
+                        <span class="text-xl">📷</span>
+                        <span class="text-sm font-bold">Add Photo/Video</span>
+                        <input type="file" id="mediaInput" class="hidden" accept="image/*,video/*"
+                            onchange="handleFileSelect(this)">
+                    </label>
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-full font-bold transition shadow-lg shadow-blue-600/20">Post</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Feed -->
+        <div id="feed" class="flex-1 overflow-y-auto space-y-6 pr-2">
+            <div class="text-center text-gray-500 mt-10">Loading community discussions...</div>
+        </div>
+    </div>
+
+    <script>
+        // --- 3D BG (Particles) ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-bg').appendChild(renderer.domElement);
+
+        const geometry = new THREE.BufferGeometry();
+        const count = 1000;
+        const posArray = new Float32Array(count * 3);
+        for (let i = 0; i < count * 3; i++) { posArray[i] = (Math.random() - 0.5) * 50; }
+        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const material = new THREE.PointsMaterial({ size: 0.05, color: 'white' });
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+        camera.position.z = 20;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- FORUM LOGIC ---
+        const token = localStorage.getItem('token');
+        if (!token) location.href = 'dashboard.html';
+
+        async function loadPosts() {
+            try {
+                const res = await fetch('/api/forum', { headers: { 'Authorization': token } });
+                const data = await res.json();
+
+                const feed = document.getElementById('feed');
+                if (data.length === 0) {
+                    feed.innerHTML = '<div class="text-center text-gray-500">No posts yet. Be the first!</div>';
+                    return;
+                }
+
+                feed.innerHTML = data.map(p => `
+                    <div class="glass p-6 rounded-2xl border-l-4 border-blue-500 relative group animate-fade-in-up">
+                        ${p.username === localStorage.getItem('username') ?
+                        `<button onclick="deletePost(${p.id})" class="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition hover:bg-red-500/20 p-2 rounded-lg">🗑️</button>` : ''}
+                        
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-300">
+                                ${p.username[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-bold text-white">@${p.username}</div>
+                                <div class="text-xs text-gray-500">${new Date(p.created_at).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-200 leading-relaxed mb-4">${p.content}</p>
+                        
+                        ${p.media_url ? renderMedia(p.media_url, p.media_type) : ''}
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        function renderMedia(url, type) {
+            if (type === 'image') {
+                return `<img src="${url}" class="w-full max-h-96 object-cover rounded-xl border border-white/10">`;
+            } else if (type === 'video') {
+                return `<video src="${url}" controls class="w-full max-h-96 rounded-xl border border-white/10"></video>`;
+            }
+            return '';
+        }
+
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('mediaPreview').classList.remove('hidden');
+                    document.getElementById('previewImg').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearMedia() {
+            document.getElementById('mediaInput').value = '';
+            document.getElementById('mediaPreview').classList.add('hidden');
+        }
+
+        document.getElementById('postForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const content = document.getElementById('postContent').value;
+            const fileInput = document.getElementById('mediaInput');
+
+            if (!content.trim() && !fileInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('content', content);
+            if (fileInput.files.length) {
+                formData.append('media', fileInput.files[0]);
+            }
+
+            const res = await fetch('/api/forum', {
+                method: 'POST',
+                headers: { 'Authorization': token }, // Do NOT set Content-Type for FormData
+                body: formData
+            });
+
+            if (res.ok) {
+                document.getElementById('postContent').value = '';
+                clearMedia();
+                loadPosts();
+            } else {
+                alert("Failed to post");
+            }
+        };
+
+        async function deletePost(id) {
+            if (!confirm("Delete this post?")) return;
+            const res = await fetch(`/api/forum/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+            });
+            if (res.ok) loadPosts();
+        }
+
+        loadPosts();
+    </script>
+    <script src="js/ai-core.js"></script>
+<script src="js/background-3d.js"></script><script src="js/global-ticker.js"></script><script src="js/mobile-nav.js"></script></body>
+
+</html>

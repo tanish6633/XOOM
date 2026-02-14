@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Market Intelligence | Farm Central</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #020617;
+            color: white;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trend-up {
+            color: #4ade80;
+        }
+
+        .trend-down {
+            color: #f87171;
+        }
+
+        /* Global Interactive Hover Effects */
+        button:hover,
+        input:hover,
+        .glass:hover,
+        a:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <div id="canvas-bg"></div>
+
+    <!-- Back Button -->
+    <button onclick="window.history.back()"
+        class="fixed top-6 left-6 z-50 w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:bg-white/10 transition hover:scale-110 shadow-lg">
+        ←
+    </button>
+
+    <div class="max-w-6xl mx-auto pl-12">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-black text-purple-400">MARKET PRICES</h1>
+                <p class="text-gray-400">Live commodity signals (Simulated)</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="localStorage.clear(); location.href='index.html'"
+                    class="glass px-6 py-2 rounded-full border border-red-500/30 font-bold hover:bg-red-500/10 transition text-red-400">Logout</button>
+                <!-- Hub Button Removed -->
+            </div>
+        </header>
+
+        <!-- Search Interface -->
+        <div class="glass p-8 rounded-3xl mb-8 border-b-4 border-purple-500">
+            <h2 class="text-xl font-bold mb-4">🔎 Check Real-Time Prices</h2>
+            <div class="flex flex-col md:flex-row gap-4">
+                <input type="text" id="mCrop" placeholder="Crop Name (e.g. Tomato)"
+                    class="flex-1 bg-black/40 p-4 rounded-xl border border-white/20 outline-none text-lg">
+                <input type="text" id="mLoc" placeholder="Market Location (e.g. Pune)"
+                    class="flex-1 bg-black/40 p-4 rounded-xl border border-white/20 outline-none text-lg">
+                <button onclick="checkPrice()"
+                    class="bg-purple-600 hover:bg-purple-500 px-8 py-4 rounded-xl font-bold text-lg transition">Check
+                    Price</button>
+            </div>
+            <div id="priceResult"
+                class="hidden mt-6 p-6 bg-purple-500/10 rounded-xl border border-purple-500/30 flex justify-between items-center animate-fade-in-up">
+                <div>
+                    <p class="text-gray-400 text-sm uppercase tracking-widest">Estimated Market Price</p>
+                    <h3 class="text-4xl font-black text-white" id="resPrice">₹0</h3>
+                </div>
+                <div class="text-right">
+                    <p class="text-gray-400 text-sm">Location</p>
+                    <p class="text-xl font-bold" id="resLoc">--</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="glass p-8 rounded-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">🌾 Wheat Price History</h3>
+                    <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs font-bold">BULLISH</span>
+                </div>
+                <canvas id="chart1"></canvas>
+            </div>
+            <div class="glass p-8 rounded-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">🥔 Potato Volatility</h3>
+                    <span class="bg-red-500/20 text-red-400 px-3 py-1 rounded text-xs font-bold">HIGH RISK</span>
+                </div>
+                <canvas id="chart2"></canvas>
+            </div>
+        </div>
+
+        <div class="mt-8 glass p-8 rounded-3xl">
+            <h3 class="text-xl font-bold mb-4 flex justify-between">
+                <span>📰 Live Market News</span>
+                <span class="text-xs font-normal text-gray-400 bg-white/5 py-1 px-3 rounded">Powered by NewsAPI</span>
+            </h3>
+            <div id="newsFeed" class="space-y-4">
+                <div class="text-center text-gray-500 animate-pulse">Loading latest verified news...</div>
+            </div>
+        </div>
+    </div>
+
+
+    </div>
+
+    <!-- Highest Recommended Crop -->
+    <div class="glass p-8 rounded-3xl mb-8 border-l-4 border-yellow-500 bg-yellow-500/5">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-1">⭐ Top Recommendation</h3>
+                <h2 class="text-3xl font-black text-white">Export Quality Cotton</h2>
+                <p class="text-gray-400">Current Market Leader due to high global demand</p>
+            </div>
+            <div class="text-right">
+                <p class="text-4xl font-black text-yellow-400">₹6,850</p>
+                <p class="text-xs text-gray-400">per Quintal</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+
+        let chart1Instance = null;
+        let chart2Instance = null;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('chart1').getContext('2d');
+            chart1Instance = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Price Trend (₹/Qtl)',
+                        data: [2200, 2250, 2230, 2280, 2350, 2400, 2450],
+                        borderColor: '#10B981',
+                        tension: 0.4,
+                        fill: false
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: 'white' }, grid: { display: false } },
+                        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('chart2').getContext('2d');
+            chart2Instance = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Volatility Index',
+                        data: [1100, 1300, 1050, 1150, 1400, 1000, 1200],
+                        borderColor: '#F87171',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: 'white' }, grid: { display: false } },
+                        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                    }
+                }
+            });
+        }
+        initCharts();
+
+        // 2. Refresh Prices
+        async function checkPrice() {
+            const crop = document.getElementById('mCrop').value;
+            // Location is mostly ignored by simulator but kept for realism/future
+            if (!crop) return alert("Please enter a Crop Name");
+
+            const resBox = document.getElementById('priceResult');
+            resBox.classList.remove('hidden');
+            document.getElementById('resPrice').innerText = "Fetching...";
+            document.getElementById('resLoc').innerText = "Connecting to Mandi...";
+
+            try {
+                const res = await fetch(`/api/market/price/${crop}`);
+                const data = await res.json();
+
+                // Artifical delay for "Connecting" feel
+                setTimeout(() => {
+                    document.getElementById('resPrice').innerText = `₹${data.price}/Qtl`;
+                    document.getElementById('resLoc').innerText = data.location + " Mandi";
+
+                    // Update Charts with simulated data for this crop
+                    updateCharts(crop, data.price);
+
+                    // Simple color coding based on trend
+                    if (data.trend === 'up') {
+                        document.getElementById('resPrice').classList.add('text-green-400');
+                        document.getElementById('resPrice').classList.remove('text-red-400');
+                    } else {
+                        document.getElementById('resPrice').classList.add('text-red-400');
+                        document.getElementById('resPrice').classList.remove('text-green-400');
+                    }
+                }, 800);
+            } catch (e) {
+                document.getElementById('resPrice').innerText = "Error";
+            }
+        }
+
+        function updateCharts(cropName, currentPrice) {
+            // Generate pseudo-random history based on current price
+            const history = [];
+            const volatility = [];
+            let p = currentPrice;
+            for (let i = 0; i < 7; i++) {
+                p = p * (0.95 + Math.random() * 0.1); // +/- 5%
+                history.unshift(Math.floor(p));
+                volatility.unshift(Math.floor(Math.random() * 100)); // 0-100 index
+            }
+
+            // Update Chart 1
+            chart1Instance.data.datasets[0].label = `${cropName} Price (₹/Qtl)`;
+            chart1Instance.data.datasets[0].data = history;
+            chart1Instance.update();
+
+            // Update Chart 2
+            chart2Instance.data.datasets[0].label = `${cropName} Volatility`;
+            chart2Instance.data.datasets[0].data = volatility;
+            chart2Instance.update();
+
+            // Update Headers
+            document.querySelector('#chart1').previousElementSibling.querySelector('h3').innerText = `🌾 ${cropName} Price History`;
+            document.querySelector('#chart2').previousElementSibling.querySelector('h3').innerText = `📈 ${cropName} Demand Index`;
+        }
+
+        async function fetchNews() {
+            const feed = document.getElementById('newsFeed');
+            feed.innerHTML = '<div class="text-center text-gray-500 animate-pulse">Loading live agri-updates...</div>';
+
+            try {
+                const res = await fetch('/api/market/news');
+                const news = await res.json();
+
+                feed.innerHTML = news.map(n => `
+                    <div class="border-l-4 border-purple-500 pl-4 py-1 hover:bg-white/5 transition p-2 rounded-r-lg">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-purple-200 text-lg"><a href="${n.link || '#'}" target="_blank" class="hover:underline">${n.title}</a></h4>
+                            <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded">${new Date().toLocaleDateString()}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mt-1 line-clamp-2">${n.desc}</p>
+                        <div class="mt-2 flex gap-2 items-center">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${n.source}</span>
+                            <span class="text-[10px] text-slate-600">• ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                feed.innerHTML = '<div class="text-center text-red-400">Failed to load news.</div>';
+            }
+        }
+
+        fetchNews();
+    </script>
+
+    <script src="js/ai-core.js"></script>
+    <!-- 3D Removed per request -->
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>
+```

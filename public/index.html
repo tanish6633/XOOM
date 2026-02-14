@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Farm Central | Future of Agriculture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-text {
+            background: linear-gradient(to right, #4ade80, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .fade-in {
+            animation: fadeIn 1.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas-bg" class="fixed inset-0 z-[-1]"></div>
+
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-black tracking-tighter text-white flex items-center gap-2">
+                <span class="text-3xl">🌱</span> FARM CENTRAL
+            </div>
+            <div class="flex gap-4">
+                <button onclick="enterDashboard()"
+                    class="hidden md:block px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full font-bold transition">Dashboard</button>
+                <button onclick="location.href='login.html'"
+                    class="px-6 py-2 bg-green-500 hover:bg-green-600 rounded-full font-bold transition shadow-lg shadow-green-500/20">Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="min-h-screen flex items-center justify-center pt-20 relative">
+        <div class="text-center px-4 max-w-4xl fade-in z-10">
+            <span class="text-green-400 font-bold tracking-widest uppercase text-sm mb-4 block">Next-Gen Agriculture
+                Management</span>
+            <h1 class="text-6xl md:text-8xl font-black mb-6 leading-tight">
+                Farming, <br> <span class="hero-text">Reimagined.</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
+                The all-in-one ecosystem for modern farmers. Manage inventory, track finances, consult AI doctors, and
+                trade in real-time.
+            </p>
+            <div class="flex flex-col md:flex-row justify-center gap-6">
+                <button onclick="enterDashboard()"
+                    class="px-10 py-5 bg-blue-600 hover:bg-blue-500 text-lg font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition transform hover:scale-105 flex items-center justify-center gap-3">
+                    <span>🚀</span> Enter Dashboard
+                </button>
+                <button onclick="document.getElementById('features').scrollIntoView()"
+                    class="px-10 py-5 glass text-lg font-bold rounded-2xl hover:bg-white/5 transition flex items-center justify-center gap-3">
+                    <span>✨</span> Explore Features
+                </button>
+            </div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#0f172a] to-transparent z-0"></div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="py-32 relative bg-[#0f172a]">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl md:text-5xl font-black mb-6">Explore the Ecosystem</h2>
+                <p class="text-slate-200 max-w-2xl mx-auto font-medium">All the tools you need in one place. Click any
+                    feature to start.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- clickable cards -->
+
+                <!-- Feature 1: Inventory (Core) -->
+                <div onclick="navigateTo('inventory.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-emerald-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">📦</div>
+                    <h3 class="text-2xl font-bold mb-4">Smart Inventory</h3>
+                    <p class="text-slate-300 leading-relaxed">Track seeds, fertilizers, and harvest stocks in real-time.
+                        Get low-stock alerts and export data instantly.</p>
+                </div>
+
+                <!-- Feature 2: Market -->
+                <div onclick="navigateTo('market.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-purple-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">📈</div>
+                    <h3 class="text-2xl font-bold mb-4">Live Market</h3>
+                    <p class="text-slate-300 leading-relaxed">Check live commodity prices, view historical trends, and
+                        stay updated with agricultural news.</p>
+                </div>
+
+                <!-- Feature 3: Calculator -->
+                <div onclick="navigateTo('calculator.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-blue-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">🧮</div>
+                    <h3 class="text-2xl font-bold mb-4">ROI Calculator</h3>
+                    <p class="text-slate-300 leading-relaxed">Plan your season. Estimate costs, profits, and yield
+                        projections before sowing a single seed.</p>
+                </div>
+
+                <!-- Feature 4: Chat/Community -->
+                <div onclick="navigateTo('chat.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-pink-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">💬</div>
+                    <h3 class="text-2xl font-bold mb-4">Farmer Connect</h3>
+                    <p class="text-slate-300 leading-relaxed">Chat with peers, make video calls, and share advice in a
+                        thriving community of modern farmers.</p>
+                </div>
+
+                <!-- Feature 5: AI Doctor (Placeholder link to dashboard/tasks for now or future page) -->
+                <div onclick="navigateTo('dashboard.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-cyan-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">🔬</div>
+                    <h3 class="text-2xl font-bold mb-4">AI Assistant</h3>
+                    <p class="text-slate-300 leading-relaxed">Get automated insights and manage your daily tasks
+                        efficiently with our smart helper.</p>
+                </div>
+
+                <!-- Feature 6: Weather -->
+                <div onclick="navigateTo('dashboard.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-yellow-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">⛅</div>
+                    <h3 class="text-2xl font-bold mb-4">Weather & Field</h3>
+                    <p class="text-slate-300 leading-relaxed">Monitor field conditions (simulated) and view real-time
+                        weather updates for your location.</p>
+                </div>
+
+                <!-- Feature 7: Expense Manager -->
+                <div onclick="navigateTo('dashboard.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-rose-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">💰</div>
+                    <h3 class="text-2xl font-bold mb-4">Expense Manager</h3>
+                    <p class="text-slate-300 leading-relaxed">Log every purchase, from seeds to machinery. Visualize
+                        your cash flow with intuitive charts.</p>
+                </div>
+
+                <!-- Feature 8: Tasks -->
+                <div onclick="navigateTo('dashboard.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-teal-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">📝</div>
+                    <h3 class="text-2xl font-bold mb-4">Task Scheduler</h3>
+                    <p class="text-slate-300 leading-relaxed">Organize daily farm activities. Assign jobs, set
+                        deadlines, and never miss a harvest window.</p>
+                </div>
+
+                <!-- Feature 9: Reports -->
+                <div onclick="navigateTo('dashboard.html')"
+                    class="glass p-10 rounded-3xl hover:bg-white/20 transition border-t-4 border-orange-500 cursor-pointer group hover:scale-105">
+                    <div class="text-5xl mb-6 group-hover:scale-110 transition">📊</div>
+                    <h3 class="text-2xl font-bold mb-4">Pro Reports</h3>
+                    <p class="text-slate-300 leading-relaxed">Generate instant PDF financial and yield reports for
+                        banks, audits, or personal records.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CALL TO ACTION -->
+    <section class="py-20 text-center relative overflow-hidden">
+        <div class="glass max-w-5xl mx-auto p-12 md:p-20 rounded-[3rem] border border-white/10 relative z-10 mx-6">
+            <h2 class="text-4xl md:text-6xl font-black mb-8">Ready to Modernize?</h2>
+            <button onclick="enterDashboard()"
+                class="px-12 py-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl text-xl font-bold hover:shadow-2xl hover:shadow-green-500/30 transition transform hover:scale-105">
+                Start Your Journey
+            </button>
+        </div>
+        <!-- BG Glow -->
+        <div
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/20 blur-[120px] rounded-full z-0">
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-12 text-center text-slate-500 text-sm border-t border-white/5 mt-20">
+        <p>&copy; 2026 Farm Central. Built with ❤️ for Farmers.</p>
+    </footer>
+
+    <script>
+        // --- 3D Background ---
+        // Handled by js/background-3d.js
+
+
+        // --- DASHBOARD ACCESS LOGIC ---
+        function enterDashboard() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // Logged in -> Go to Dashboard
+                window.location.href = 'dashboard.html';
+            } else {
+                // Not Logged in -> Go to Login
+                window.location.href = 'login.html';
+            }
+        }
+
+        // --- DIRECT NAVIGATION ---
+        function navigateTo(page) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                window.location.href = page;
+            } else {
+                // Save intended destination? For now just redirect to login
+                alert("Please login to access this feature.");
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+    <script src="js/background-3d.js"></script>
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>

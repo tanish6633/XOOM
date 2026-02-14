@@ -1,0 +1,44 @@
+/* Mobile Animations */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#mobile-view>div {
+    animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    /* Hidden initially */
+}
+
+#mobile-view>div:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+#mobile-view>div:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+#mobile-view>div:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+/* Enhanced Quick Action Buttons */
+#mobile-view button:active {
+    transform: scale(0.92);
+    transition: transform 0.1s;
+}
+
+/* Glass Enhancement for Mobile */
+.mobile-glass {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}

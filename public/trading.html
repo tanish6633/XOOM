@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Trade Hub | Farm Central</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            color: white;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #f97316;
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+        }
+
+        .tab-btn.active {
+            background: rgba(249, 115, 22, 0.2);
+            border-color: #f97316;
+            color: #f97316;
+        }
+
+        /* Global Interactive Hover Effects */
+        button:hover,
+        input:hover,
+        .glass:hover,
+        a:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="pb-24">
+    <div id="canvas-bg" class="fixed inset-0 z-[-1] opacity-60"></div>
+
+    <!-- Back Button -->
+    <button onclick="window.history.back()"
+        class="fixed top-6 left-6 z-50 w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:bg-white/10 transition hover:scale-110 shadow-lg">
+        ←
+    </button>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8 pl-12">
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1
+                    class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-500 tracking-tighter">
+                    TRADE HUB</h1>
+                <p class="text-slate-400 font-medium">Direct Farmer-to-Buyer Marketplace</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="changeTab('market')" id="tab-market"
+                    class="tab-btn active px-6 py-2 rounded-full glass font-bold transition border border-transparent">🛒
+                    Market</button>
+                <button onclick="changeTab('my')" id="tab-my"
+                    class="tab-btn px-6 py-2 rounded-full glass font-bold transition border border-transparent">📂 My
+                    Listings</button>
+                <!-- Hub Button Removed -->
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- LEFT: CREATE LISTING (Visible on both tabs, but sticky) -->
+            <div class="lg:col-span-1">
+                <div class="glass p-6 rounded-3xl border-t-4 border-orange-500 sticky top-4">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span class="bg-orange-500/20 text-orange-400 p-2 rounded-lg">📢</span> Sell Your Harvest
+                    </h3>
+                    <form id="sellForm" class="space-y-4">
+                        <div>
+                            <label class="text-xs text-slate-400 font-bold uppercase ml-1">Crop Type</label>
+                            <select id="s-name" class="input-field cursor-pointer">
+                                <option value="Wheat">Wheat</option>
+                                <option value="Rice">Rice (Basmati)</option>
+                                <option value="Cotton">Cotton</option>
+                                <option value="Potato">Potato</option>
+                                <option value="Tomato">Tomato</option>
+                                <option value="Onion">Onion</option>
+                                <option value="Maize">Maize</option>
+                                <option value="Sugarcane">Sugarcane</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-slate-400 font-bold uppercase ml-1">Quantity (Qt)</label>
+                                <input type="number" id="s-qty" class="input-field" placeholder="e.g. 50">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400 font-bold uppercase ml-1">Price/Qt (₹)</label>
+                                <input type="number" id="s-price" class="input-field" placeholder="e.g. 2400">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 font-bold uppercase ml-1">Description</label>
+                            <textarea id="s-desc" rows="3" class="input-field"
+                                placeholder="Quality details, harvest date, location..."></textarea>
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-gradient-to-r from-orange-500 to-amber-600 py-3 rounded-xl font-bold shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition text-white">
+                            🚀 Post Listing
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- RIGHT: MAIN CONTENT AREA -->
+            <div class="lg:col-span-2 space-y-4">
+
+                <!-- FILTER BAR (Market Only) -->
+                <div id="market-filters" class="glass p-4 rounded-xl flex justify-between items-center">
+                    <h3 class="font-bold text-white flex items-center gap-2">
+                        <span>🌾</span> Live Market
+                    </h3>
+                    <button onclick="loadMarket()"
+                        class="text-xs text-orange-400 hover:text-white transition font-mono">REFRESH ⟳</button>
+                </div>
+
+                <!-- LISTINGS GRID -->
+                <div id="listings-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic -->
+                    <div class="col-span-full text-center py-20 text-slate-500 animate-pulse">Loading Trade Hub...</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- VOICE FAB -->
+    <div class="fixed bottom-8 right-8 z-50">
+        <button onclick="farmAI.activateAI()" id="voice-fab"
+            class="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 text-white flex items-center justify-center shadow-2xl hover:scale-110 transition border-4 border-white/20 animate-bounce">
+            🎙️
+        </button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const myUsername = localStorage.getItem('username'); // Assuming this is stored
+        if (!token) location.href = 'login.html';
+
+        let currentTab = 'market';
+
+        // --- 3D BG ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-bg').appendChild(renderer.domElement);
+
+        // Particles (Gold/Orange theme)
+        const geometry = new THREE.BufferGeometry();
+        const count = 1500;
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+        for (let i = 0; i < count * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 80;
+            positions[i + 1] = (Math.random() - 0.5) * 80;
+            positions[i + 2] = (Math.random() - 0.5) * 50;
+            colors[i] = 1; colors[i + 1] = 0.7; colors[i + 2] = 0; // Gold
+        }
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const material = new THREE.PointsMaterial({ size: 0.15, vertexColors: true, transparent: true, opacity: 0.8 });
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+        camera.position.z = 25;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            points.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- TAB LOGIC ---
+        function changeTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-market').className = `tab-btn px-6 py-2 rounded-full glass font-bold transition border border-transparent ${tab === 'market' ? 'active' : ''}`;
+            document.getElementById('tab-my').className = `tab-btn px-6 py-2 rounded-full glass font-bold transition border border-transparent ${tab === 'my' ? 'active' : ''}`;
+
+            document.getElementById('market-filters').style.display = tab === 'market' ? 'flex' : 'none';
+
+            if (tab === 'market') loadMarket();
+            else loadMyListings();
+        }
+
+        // --- LOAD MARKET ---
+        async function loadMarket() {
+            const grid = document.getElementById('listings-grid');
+            grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500">Fetching Listings...</div>';
+
+            try {
+                const res = await fetch('/api/trade/listings', { headers: { 'Authorization': token } });
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center text-slate-500 py-10 flex flex-col items-center gap-2"><span class="text-4xl">📭</span><span>No active listings. Be the first to sell!</span></div>`;
+                    return;
+                }
+
+                grid.innerHTML = data.map(item => `
+                    <div class="glass p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition flex flex-col justify-between group">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-xl font-bold text-white">${item.crop_name}</h4>
+                                <span class="text-sm bg-green-500/20 text-green-400 px-3 py-1 rounded-full font-bold">₹${item.price_per_unit}/Qt</span>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-4 h-12 overflow-hidden leading-relaxed">${item.description || 'No description provided.'}</p>
+                            
+                            <div class="bg-white/5 p-3 rounded-xl mb-4 flex justify-between items-center">
+                                <div class="text-xs text-slate-400">
+                                    <div class="font-bold text-white mb-1">Seller</div>
+                                    ${item.seller_name}
+                                </div>
+                                <div class="text-xs text-slate-400 text-right">
+                                    <div class="font-bold text-white mb-1">Quantity</div>
+                                    ${item.quantity} Qt
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            ${item.seller_name === myUsername
+                        ? `<button class="col-span-2 w-full py-2 rounded-lg bg-gray-600/50 text-gray-300 font-bold cursor-not-allowed">Your Listing</button>`
+                        : `
+                                    <button onclick="startChat('${item.seller_name}')" class="py-2 rounded-lg bg-blue-500/20 text-blue-400 font-bold hover:bg-blue-500 hover:text-white transition flex items-center justify-center gap-2">
+                                        💬 Chat
+                                    </button>
+                                    <button onclick="buyItem(${item.id}, '${item.crop_name}', ${item.price_per_unit * item.quantity})" 
+                                        class="py-2 rounded-lg bg-green-500/20 text-green-400 font-bold hover:bg-green-500 hover:text-white transition flex items-center justify-center gap-2">
+                                        🛒 Buy
+                                    </button>
+                                `
+                    }
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (e) {
+                console.error(e);
+                grid.innerHTML = `<div class="text-red-400 col-span-full text-center">Failed to load market. Check connection.</div>`;
+            }
+        }
+
+        // --- LOAD MY LISTINGS ---
+        async function loadMyListings() {
+            const grid = document.getElementById('listings-grid');
+            grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500">Fetching Your History...</div>';
+
+            try {
+                const res = await fetch('/api/trade/listings/my', { headers: { 'Authorization': token } });
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center text-slate-500 py-10 flex flex-col items-center gap-2"><span class="text-4xl">📂</span><span>You haven't listed anything yet.</span></div>`;
+                    return;
+                }
+
+                grid.innerHTML = data.map(item => `
+                    <div class="glass p-6 rounded-2xl border border-white/5 flex flex-col justify-between">
+                         <div class="flex justify-between items-start mb-2">
+                            <h4 class="text-xl font-bold text-white">${item.crop_name}</h4>
+                            <span class="text-xs px-2 py-1 rounded font-bold uppercase ${item.status === 'active' ? 'bg-green-500/20 text-green-400' : item.status === 'sold' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}">${item.status}</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">${item.description}</p>
+                        <div class="flex justify-between text-xs text-slate-500 font-mono border-t border-white/10 pt-4">
+                            <span>Listed: ${new Date(item.created_at).toLocaleDateString()}</span>
+                            <span>₹${item.price_per_unit}/Qt</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                grid.innerHTML = `<div class="text-red-400 col-span-full text-center">Failed to load history.</div>`;
+            }
+        }
+
+        // --- ACTIONS ---
+        document.getElementById('sellForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Posting...';
+            btn.disabled = true;
+
+            const body = {
+                crop_name: document.getElementById('s-name').value,
+                quantity: document.getElementById('s-qty').value,
+                price: document.getElementById('s-price').value,
+                description: document.getElementById('s-desc').value
+            };
+
+            try {
+                const res = await fetch('/api/trade/listings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert("Listing Posted Successfully!");
+                    document.getElementById('sellForm').reset();
+                    if (currentTab === 'market') loadMarket(); // Refresh
+                    else loadMyListings();
+                } else {
+                    alert("Error: " + (data.error || "Failed"));
+                }
+            } catch (err) {
+                alert("Network Error");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        async function buyItem(id, name, cost) {
+            if (!confirm(`Confirm purchase of ${name} for ₹${cost.toLocaleString()}?`)) return;
+
+            try {
+                const res = await fetch(`/api/trade/buy/${id}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': token }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert("Purchase Successful! Item moved to 'Sold'.");
+                    loadMarket();
+                } else {
+                    alert(data.error);
+                }
+            } catch (e) { alert("Transaction Failed"); }
+        }
+
+        function startChat(username) {
+            window.location.href = `chat.html?chat_with=${username}`;
+        }
+
+        // Init
+        loadMarket();
+
+        // Auto-refresh market every 5 seconds
+        setInterval(() => {
+            if (currentTab === 'market') loadMarket();
+        }, 5000);
+    </script>
+    <script src="js/ai-core.js"></script>
+    <script src="js/background-3d.js"></script>
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>

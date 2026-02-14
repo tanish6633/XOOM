@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Past Reports | Farm Central</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Global Interactive Hover Effects */
+        button:hover,
+        input:hover,
+        .glass:hover,
+        a:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-12">
+    <!-- Back Button -->
+    <button onclick="window.history.back()"
+        class="fixed top-6 left-6 z-50 w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center text-white hover:bg-white/10 transition hover:scale-110 shadow-lg border border-white/10">
+        ←
+    </button>
+
+    <div class="max-w-4xl mx-auto pt-10">
+        <header class="flex justify-between items-center mb-8 pl-12">
+            <h1 class="text-3xl font-black">Medical Reports</h1>
+            <!-- Back to Doctor Button Removed -->
+        </header>
+
+        <div id="reports-list" class="space-y-4">
+            <!-- Loaded via JS -->
+            <p class="text-slate-500 text-center">Loading history...</p>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) location.href = 'login.html';
+
+        async function loadReports() {
+            try {
+                const res = await fetch('/api/doctor/history', { headers: { 'Authorization': token } });
+                const reports = await res.json();
+                const container = document.getElementById('reports-list');
+
+                if (reports.length === 0) {
+                    container.innerHTML = '<p class="text-slate-500 text-center mt-10">No past reports found.</p>';
+                    return;
+                }
+
+                container.innerHTML = reports.map(r => `
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-white/5 flex flex-col md:flex-row justify-between md:items-center gap-4 hover:bg-slate-800 transition">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-xs font-mono text-slate-500">${new Date(r.created_at).toLocaleDateString()}</span>
+                                <span class="bg-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded-full">${r.scan_id}</span>
+                            </div>
+                            <h3 class="text-xl font-bold ${r.diagnosis === 'Healthy Crop' ? 'text-green-400' : 'text-red-400'}">${r.diagnosis}</h3>
+                            <p class="text-sm text-slate-400 mt-1 line-clamp-2">${r.treatment}</p>
+                        </div>
+                        <div class="shrink-0 flex gap-3">
+                             ${r.image_url ? `<a href="${r.image_url}" target="_blank" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-bold hover:bg-slate-600 transition">View Image</a>` : ''}
+                             <button onclick="downloadPdf(${r.id})" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg text-sm font-bold hover:bg-blue-600/30 transition">Download PDF</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-red-500 text-center">Failed to load reports.</p>';
+            }
+        }
+
+        async function downloadPdf(id) {
+            try {
+                const res = await fetch(`/api/doctor/report/${id}`, { headers: { 'Authorization': token } });
+                if (!res.ok) throw new Error("Failed");
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Report_${id}.pdf`;
+                document.body.appendChild(a); a.click(); a.remove();
+            } catch (e) { alert("Error downloading PDF"); }
+        }
+
+        loadReports();
+    </script>
+    <script src="js/background-3d.js"></script>
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>

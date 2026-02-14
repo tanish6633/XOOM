@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Farm | Inventory Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #050505;
+            color: white;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .low-stock {
+            border-left: 4px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .normal-stock {
+            border-left: 4px solid #22c55e;
+        }
+
+        /* Global Interactive Hover Effects */
+        button:hover,
+        input:hover,
+        .glass:hover,
+        a:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-12">
+    <div id="canvas-bg"></div>
+
+    <!-- Back Button -->
+    <button onclick="window.history.back()"
+        class="fixed top-6 left-6 z-50 w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:bg-white/10 transition hover:scale-110 shadow-lg">
+        ←
+    </button>
+
+    <div class="max-w-6xl mx-auto pl-12">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-4xl font-black text-green-400 tracking-tighter">INVENTORY CONTROL</h1>
+                <p class="text-gray-400">Manage your seeds, fertilizers, and tools</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportCSV()"
+                    class="glass px-6 py-2 rounded-full border border-blue-500/30 font-bold hover:bg-blue-500/10 transition text-blue-400">Export
+                    CSV</button>
+                <button onclick="localStorage.clear(); location.href='index.html'"
+                    class="glass px-6 py-2 rounded-full border border-red-500/30 font-bold hover:bg-red-500/10 transition text-red-400">Logout</button>
+                <!-- Dashboard button removed -->
+            </div>
+        </header>
+
+        <form id="invForm" class="glass p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+            <input type="text" id="name" placeholder="Item Name" required
+                class="bg-black/40 p-3 rounded-xl border border-white/10 outline-none">
+            <select id="type" class="bg-black/40 p-3 rounded-xl border border-white/10 outline-none">
+                <option value="Seeds">Seeds</option>
+                <option value="Fertilizer">Fertilizer</option>
+                <option value="Tools">Tools</option>
+                <option value="Crops">Crops</option>
+            </select>
+            <input type="number" id="qty" placeholder="Quantity" required
+                class="bg-black/40 p-3 rounded-xl border border-white/10 outline-none">
+            <input type="number" id="cost" placeholder="Cost per unit" required
+                class="bg-black/40 p-3 rounded-xl border border-white/10 outline-none">
+            <button type="submit"
+                class="bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl py-3 col-span-full transition-all">Update
+                Stock</button>
+        </form>
+
+        <div id="invDisplay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+    </div>
+
+    <script>
+        // --- THREE.JS BACKGROUND ---
+
+
+        // --- DATA LOGIC ---
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'dashboard.html';
+
+        async function load() {
+            const res = await fetch('/api/inventory', { headers: { 'Authorization': token } });
+            const data = await res.json();
+
+            document.getElementById('invDisplay').innerHTML = data.map(i => {
+                const isLow = i.quantity <= 5;
+                return `
+                <div class="glass p-6 rounded-2xl ${isLow ? 'low-stock' : 'normal-stock'} relative group">
+                    <button onclick="deleteInventory(${i.id})" class="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition hover:bg-red-500/20 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                    </button>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-xs font-bold ${isLow ? 'text-red-400' : 'text-green-400'} uppercase">${i.type}</span>
+                        ${isLow ? '<span class="bg-red-500/20 text-red-400 text-[10px] px-2 py-1 rounded-full animate-pulse">⚠️ LOW STOCK</span>' : ''}
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">${i.name}</h3>
+                    <div class="flex justify-between items-end">
+                        <p class="text-3xl font-black">${i.quantity} <span class="text-sm font-normal text-gray-500">Units</span></p>
+                        <p class="text-gray-400 text-xs italic">Value: ₹${(i.quantity * i.cost).toLocaleString()}</p>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function deleteInventory(id) {
+            if (!confirm("Are you sure you want to delete this item?")) return;
+            const res = await fetch(`/api/inventory/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+            });
+            if (res.ok) load();
+        }
+
+        document.getElementById('invForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const body = {
+                name: document.getElementById('name').value,
+                type: document.getElementById('type').value,
+                quantity: document.getElementById('qty').value,
+                cost: document.getElementById('cost').value
+            };
+
+            const res = await fetch('/api/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                document.getElementById('invForm').reset();
+                load();
+            }
+        };
+
+        load();
+
+        async function exportCSV() {
+            try {
+                const res = await fetch('/api/inventory', { headers: { 'Authorization': token } });
+                const data = await res.json();
+
+                if (!data.length) return alert("No data to export");
+
+                const csvContent = "data:text/csv;charset=utf-8,"
+                    + "ID,Name,Type,Quantity,Cost\n"
+                    + data.map(e => `${e.id},${e.name},${e.type},${e.quantity},${e.cost}`).join("\n");
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "inventory_report.csv");
+                document.body.appendChild(link);
+                link.click();
+            } catch (e) { console.error(e); }
+        }
+    </script>
+    <script src="js/background-3d.js"></script>
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>

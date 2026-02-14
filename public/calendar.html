@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Crop Calendar | Farm Central</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <style>
+        body {
+            margin: 0;
+            background: #020617;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .fc-toolbar-title {
+            font-size: 1.5em !important;
+            font-weight: bold;
+            color: #4ade80;
+        }
+
+        .fc-button {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: none !important;
+        }
+
+        .fc-button-active {
+            background: #4ade80 !important;
+            color: black !important;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <div id="canvas-bg"></div>
+
+    <div class="max-w-6xl mx-auto h-screen flex flex-col">
+        <header class="flex justify-between items-center mb-6 shrink-0">
+            <div>
+                <h1 class="text-3xl font-black text-green-400">CROP CALENDAR</h1>
+                <p class="text-gray-400">Plan your planting and harvesting seasons</p>
+            </div>
+            <button onclick="location.href='dashboard.html'"
+                class="glass px-6 py-2 rounded-full hover:bg-white/10 transition font-bold">Back to Hub</button>
+        </header>
+
+        <div class="glass flex-1 rounded-3xl p-6 overflow-hidden shadow-2xl relative">
+            <div id='calendar' class="h-full"></div>
+        </div>
+    </div>
+
+    <!-- Simple Add Event Modal -->
+    <dialog id="eventModal" class="glass rounded-xl p-0 backdrop:backdrop-blur-sm text-white">
+        <form class="p-6 w-96 flex flex-col gap-4" onsubmit="saveEvent(event)">
+            <h3 class="text-xl font-bold text-green-400">New Farm Event</h3>
+
+            <!-- Crop Helper -->
+            <div class="space-y-2">
+                <label class="text-xs text-gray-400 uppercase tracking-widest font-bold">Smart Crop Assistant</label>
+                <div class="flex gap-2">
+                    <input list="cropValues" id="cropInput" placeholder="Type crop name (e.g. Rice)..."
+                        class="flex-1 p-3 rounded bg-black/40 border border-white/20 outline-none text-white focus:border-green-400 transition"
+                        oninput="fetchCropDetails(this.value)">
+                    <datalist id="cropValues">
+                        <option value="Rice">
+                        <option value="Wheat">
+                        <option value="Corn">
+                        <option value="Maize">
+                        <option value="Cotton">
+                        <option value="Tomato">
+                        <option value="Potato">
+                        <option value="Sugarcane">
+                        <option value="Onion">
+                        <option value="Soybean">
+                    </datalist>
+                </div>
+
+                <!-- Details Box -->
+                <div id="cropDetailsPanel" class="hidden p-3 bg-white/5 rounded-lg border border-white/10 text-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-green-400" id="cdName">Crop Name</span>
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded"
+                            id="cdSeason">Season</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                        <div>⏱ <span id="cdDuration">--</span></div>
+                        <div>💧 <span id="cdWater">--</span></div>
+                        <div>🌡 <span id="cdTemp">--</span></div>
+                        <div>🌱 <span id="cdSoil">--</span></div>
+                    </div>
+                    <div class="mt-2 text-xs text-slate-400 italic border-t border-white/10 pt-2" id="cdTips"></div>
+                </div>
+            </div>
+
+            <hr class="border-white/10 my-1">
+
+            <label class="text-xs text-gray-400 uppercase tracking-widest font-bold">Event Details</label>
+            <input type="text" id="evtTitle" placeholder="Event Title"
+                class="p-3 rounded bg-black/40 border border-white/20 outline-none focus:border-green-400 transition"
+                required>
+            <input type="date" id="evtStart"
+                class="p-3 rounded bg-black/40 border border-white/20 outline-none focus:border-green-400 transition"
+                required>
+            <select id="evtColor"
+                class="p-3 rounded bg-black/40 border border-white/20 outline-none focus:border-green-400 transition">
+                <option value="#10B981">Green (Planting)</option>
+                <option value="#F59E0B">Orange (Harvest)</option>
+                <option value="#3B82F6">Blue (Irrigation)</option>
+                <option value="#EF4444">Red (Urgent)</option>
+            </select>
+
+            <div class="flex gap-2 justify-end mt-2">
+                <button type="button" onclick="eventModal.close()"
+                    class="px-4 py-2 text-gray-400 hover:text-white transition">Cancel</button>
+                <button type="submit"
+                    class="bg-green-600 px-6 py-2 rounded-lg font-bold hover:bg-green-500 transition shadow-[0_0_20px_rgba(34,197,94,0.3)]">Save
+                    Event</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        // --- 3D BG ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-bg').appendChild(renderer.domElement);
+
+        // Floating Cubes
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshNormalMaterial({ wireframe: true });
+        const cubes = [];
+        for (let i = 0; i < 20; i++) {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 20);
+            scene.add(mesh);
+            cubes.push(mesh);
+        }
+        camera.position.z = 20;
+        function animate() { requestAnimationFrame(animate); cubes.forEach(c => { c.rotation.x += 0.01; c.rotation.y += 0.01; }); renderer.render(scene, camera); }
+        animate();
+
+        // --- CALENDAR LOGIC ---
+        const token = localStorage.getItem('token');
+        if (!token) location.href = 'dashboard.html';
+
+        let calendar;
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                selectable: true,
+                dateClick: function (info) {
+                    document.getElementById('evtStart').value = info.dateStr;
+                    document.getElementById('eventModal').showModal();
+                },
+                events: async function (info, successCallback, failureCallback) {
+                    try {
+                        const res = await fetch('/api/calendar', { headers: { 'Authorization': token } });
+                        const data = await res.json();
+                        successCallback(data.map(e => ({
+                            title: e.title,
+                            start: e.start_date,
+                            color: e.color
+                        })));
+                    } catch (err) { failureCallback(err); }
+                }
+            });
+            calendar.render();
+        });
+
+        async function saveEvent(e) {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('evtTitle').value,
+                start: document.getElementById('evtStart').value,
+                color: document.getElementById('evtColor').value
+            };
+
+            const res = await fetch('/api/calendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById('eventModal').close();
+                calendar.refetchEvents();
+                e.target.reset();
+                document.getElementById('cropDetailsPanel').classList.add('hidden'); // Reset panel
+            }
+        }
+
+        // Debounce timer
+        let cropTimeout;
+
+        async function fetchCropDetails(cropName) {
+            if (!cropName) {
+                document.getElementById('cropDetailsPanel').classList.add('hidden');
+                return;
+            }
+
+            clearTimeout(cropTimeout);
+            cropTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/calendar/crop-details?name=${encodeURIComponent(cropName)}`, {
+                        headers: { 'Authorization': token }
+                    });
+                    const data = await res.json();
+
+                    if (data.found) {
+                        document.getElementById('cropDetailsPanel').classList.remove('hidden');
+                        document.getElementById('cdName').textContent = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+                        document.getElementById('cdSeason').textContent = data.season;
+                        document.getElementById('cdDuration').textContent = data.duration;
+                        document.getElementById('cdWater').textContent = data.water;
+                        document.getElementById('cdTemp').textContent = data.temp;
+                        document.getElementById('cdSoil').textContent = data.soil;
+                        document.getElementById('cdTips').textContent = `💡 Tip: ${data.tips}`;
+
+                        // Auto-fill title if empty
+                        const titleInput = document.getElementById('evtTitle');
+                        if (!titleInput.value) {
+                            titleInput.value = `Planting ${data.name.charAt(0).toUpperCase() + data.name.slice(1)}`;
+                        }
+                    } else {
+                        document.getElementById('cropDetailsPanel').classList.add('hidden');
+                    }
+                } catch (err) {
+                    console.error("Error fetching crop details:", err);
+                }
+            }, 300); // 300ms debounce
+        }
+    </script>
+    <script src="js/background-3d.js"></script>
+    <script src="js/global-ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>
