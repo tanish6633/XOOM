@@ -115,24 +115,23 @@ app.get('/health', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-//const startScheduler = require('./scheduler');
-//const { verifyConnection } = require('./utils/mailer'); // Import Verify
+
+// === SAFE MODE: Abhi ke liye sab band kar diya hai ===
+// const startScheduler = require('./scheduler');
+// const { verifyConnection } = require('./utils/mailer'); 
 
 // Conditional Listen for Local Development
 if (require.main === module) {
-   // startScheduler();
-   // verifyConnection(); // Verify SMTP on Start
+  
+  // Niche wali lines ko // se band rakhna zaroori hai
+  // startScheduler();
+  // verifyConnection(); 
 
-    server.listen(PORT, () => {
-        console.log(`
-        --- 🌾 FARM SYSTEM ONLINE ---
-        🚀 Port: ${PORT}
-        ✅ Routes Linked: Auth, Inv, Tasks, Exp, Dash, Chat
-        ⚡ Socket.io: Active (Calling System Ready)
-        -----------------------------
-        `);
-    });
+  server.listen(PORT, () => {
+    console.log(`--- FARM SYSTEM ONLINE ---`);
+    console.log(`🚀 Server running on Port: ${PORT}`);
+    console.log(`✅ Safe Mode: Scheduler & Mailer disabled`);
+  });
 }
 
-// Export for Vercel (Serverless)
-module.exports = app;  b
+module.exports = app;
